@@ -1,0 +1,29 @@
+name: ml3d
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - pillow
+  - pip
+  - python<=3.12
+  - typing_extensions
+  - pip:
+    - ffmpeg
+    - torch
+    - torchaudio
+    - torchvision
+    - open3d
+    - mediapy
+    - lpips
+    - scikit-image
+    - tqdm
+    - trimesh
+    - numpy
+    - plyfile
+    - 2dGScode/submodules/diff-surfel-rasterization
+    - 2dGScode/submodules/simple-knn
+    - opencv-python
+    - munch
+    - pyyaml
