@@ -29,6 +29,8 @@ if __name__ == "__main__":
 
     results_dict = {}
     for scene in os.listdir(os.path.join(args.output_path)):
+        if scene not in ['7b6477cb95', 'c50d2d1d42']:
+            continue
         for comb in all_combinations:
 
             model_path = os.path.join(args.output_path,scene, subscene, '-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else "base_model")
