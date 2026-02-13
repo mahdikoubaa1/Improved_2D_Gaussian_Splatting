@@ -6,10 +6,12 @@ channels:
   - defaults
 dependencies:
   - pillow
+  - tectonic
   - pip
   - python<=3.12
   - typing_extensions
   - pip:
+    - geffnet
     - ffmpeg
     - torch
     - torchaudio

@@ -64,7 +64,6 @@ if __name__ == "__main__":
     to_max = ['PSNR', 'SSIM']
     def bold_best(col):
         if col.name in to_min:
-            print("Minimizing metric: ", col.name)
             is_best = col == col.min()
         elif col.name in to_max:
             is_best = col == col.max()
@@ -84,8 +83,19 @@ if __name__ == "__main__":
         'Points': 'Points $\\uparrow$'
     }
     latex_table = df.rename(columns=header_map).to_latex(escape=False)
-    print(latex_table)
-
-
+    document='''\\documentclass[varwidth]{standalone}
+\\usepackage{graphicx}
+\\usepackage{amsmath}
+\\usepackage{booktabs}
+\\begin{document}
+\\small
+''' + latex_table + '''\\end{document}
+'''
+    with open(os.path.join( f'{subscene}_results_table.tex'), 'w') as f:
+        f.write(document)
+    
+    os.system(f"tectonic  {f'{subscene}_results_table.tex'}")
+    
+    
 
     #print('scenes to process: ', downloaded_val_list)
