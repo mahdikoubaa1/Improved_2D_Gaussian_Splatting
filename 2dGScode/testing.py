@@ -24,6 +24,7 @@ import glob
 from skimage.morphology import dilation, disk
 import argparse
 from utils.mono_prior import estimate_depth, estimate_normal
+from utils.mesh_utils import get_depth_map
 import trimesh
 from pathlib import Path
 import subprocess
@@ -72,33 +73,24 @@ if __name__ == "__main__":
     
     gaussians = GaussianModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
-    depth_loss= ScaleAndShiftInvariantLoss(alpha=0.5, scales=1, reduction='image-based')
-
-    for viewpoint_camera in tqdm(scene.getTestCameras(), desc="Culling progress"):
+    denom=0
+    absrel=0.0
+    for viewpoint_camera in tqdm(scene.getTestCameras(), desc="Testing progress"):
         sampled_masks = []
         with torch.inference_mode():
             render_pkg = render(viewpoint_camera, gaussians, pipe, background)
-            #depth_rendered = render_pkg["surf_depth"]
-            #depth_rendered = 1/depth_rendered
-            #depth_rendered = (depth_rendered - depth_rendered.min()) / (depth_rendered.max() - depth_rendered.min())
-            rendered_normal = render_pkg["rend_normal"]
-            #print(depth_rendered.shape)
-            #torchvision.utils.save_image(depth_rendered, f"render_{viewpoint_camera.image_name}.png")
-            normal= estimate_normal (viewpoint_camera)
-            #normal = (normal + 1.0) / 2.0
-            #depth = estimate_depth(viewpoint_camera).unsqueeze(0)
             
-            #loss = depth_loss(depth_rendered, depth, mask= torch.ones_like(depth_rendered))
+            gt_depth = get_depth_map(os.path.join(args.source_path.replace('dslr','scans'), 'mesh_aligned_0.05.ply'), viewpoint_camera, device="cuda")
+            rendered_depth = render_pkg["surf_depth"]
+            mask = gt_depth!= float('inf')
+            gt_depth = gt_depth[mask]
+            denom += torch.sum(mask).item()
+            rendered_depth = rendered_depth[mask]
+            absrel+=torch.sum(torch.abs(gt_depth - rendered_depth) / gt_depth).item()
             
-            normal_l1, normal_cos = get_normal_loss(rendered_normal.permute(1, 2, 0), normal.permute(1, 2, 0))
-            #print("Depth loss: ", loss.item())
-            print("Normal L1 loss: ", normal_l1.item())
-            print("Normal Cosine loss: ", normal_cos.item())
-            #torchvision.utils.save_image(depth, f"render_{viewpoint_camera.image_name}_depth.png")
-        
-            
-
-            
+    absrel /= denom
+    
+    print(f"Overall AbsRel Error: {absrel:.4f}")
             
 # Sample to point clouds
 

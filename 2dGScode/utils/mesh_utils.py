@@ -19,6 +19,7 @@ import torch.nn.functional as F
 import math
 from tqdm import tqdm
 from utils.render_utils import save_img_f32, save_img_u8
+from utils.graphics_utils import fov2focal
 from functools import partial
 import open3d as o3d
 import trimesh
@@ -73,6 +74,44 @@ def compute_chamfer_distance(mesh_pred: o3d.geometry.TriangleMesh, mesh_gt: o3d.
     print(f"CD: {metrics[o3d.t.geometry.Metric.ChamferDistance].item()}")
 
     return metrics[o3d.t.geometry.Metric.ChamferDistance].item()
+def setup_renderer(mesh_path, width, height):
+    mesh = o3d.io.read_triangle_mesh(mesh_path)
+    mesh.compute_vertex_normals()
+
+    # 2. Initialize OffscreenRenderer
+    renderer = o3d.visualization.rendering.OffscreenRenderer(width, height)
+    
+    # 3. Setup Scene
+    # We use a simple unlit shader to ensure the geometry is processed correctly
+    material = o3d.visualization.rendering.MaterialRecord()
+    material.shader = "defaultUnlit"
+    renderer.scene.add_geometry("mesh", mesh, material)
+    return renderer
+
+def get_depth_map(renderer, viewpoint_camera, device="cuda"):
+    # 1. Load the mesh
+    # The code snippet `mesh = o3d.io.read_triangle_mesh(mesh_path)` is reading a triangle mesh from a
+    # file specified by the `mesh_path` variable.
+    H, W = viewpoint_camera.original_image.shape[1], viewpoint_camera.original_image.shape[2]
+    fl_x= fov2focal(viewpoint_camera.FoVx, W)
+    fl_y= fov2focal(viewpoint_camera.FoVy, H)
+    cx = W / 2.0
+    cy = H / 2.0
+    intrinsics = torch.tensor([[fl_x, 0.0, cx], [0.0, fl_y, cy], [0.0, 0.0, 1.0]], dtype=torch.float32).numpy()
+    extrinsics = viewpoint_camera.world_view_transform.T.cpu().numpy()
+    
+    # 4. Apply Intrinsics and Extrinsics
+    # Intrinsics: 3x3 matrix, Extrinsics: 4x4 [R|t] matrix
+    renderer.setup_camera(intrinsics, extrinsics, W, H)
+    
+    # 5. Render Depth
+    # z_in_view_space=True returns actual distance from camera in world units
+    depth_image = renderer.render_to_depth_image(z_in_view_space=True)
+    
+    # Convert to NumPy for processing
+    depth_array = np.asarray(depth_image)
+    return torch.tensor(depth_array, dtype=torch.float32, device=device).unsqueeze(0)  # Add channel dimension
+
 def cull_mesh(cameras ,mesh, masks_path) -> o3d.geometry.TriangleMesh:
     vertices = mesh.vertices
     vertices = torch.from_numpy(vertices).cuda()

@@ -22,6 +22,7 @@ import sys
 from scene import Scene, GaussianModel
 from utils.general_utils import safe_state
 import uuid
+from utils.mesh_utils import get_depth_map, setup_renderer
 from utils.point_utils import depth_to_normal, depths_to_points
 from tqdm import tqdm
 from utils.image_utils import psnr, render_net_image
@@ -227,8 +228,12 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     for view in tqdm(views):
                         gt = view.original_image[0:3, :, :]
                         render_pkg = render(view, gaussians, pipe, background)
-                        out_pts = depths_to_points(view, render_pkg["surf_depth"])
-                        accum_alpha = render_pkg["rend_alpha"]
+                        valid_mask = render_pkg["rend_alpha"].reshape(-1) > 0.99
+                        #alpha_bins = torch.histc(render_pkg["rend_alpha"], bins=100, min=0.0, max=1.0)
+                        #print("Alpha distribution (bins of 0.1):", alpha_bins)
+                        out_pts = depths_to_points(view, render_pkg["surf_depth"])[valid_mask]
+                        accum_alpha = render_pkg["rend_alpha"].reshape(-1)[valid_mask]
+                        
 
 
                         prob = accum_alpha
@@ -242,7 +247,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
                         N_xyz=prob.shape[0]
                         num_sampled=int(N_xyz*factor)
-                        print (gt.shape)
                         indices = np.random.choice(N_xyz, size=num_sampled, 
                                                    p=prob,replace=False)
                         gt = gt.permute(1,2,0).reshape(-1,3)
@@ -361,9 +365,21 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                 psnr_test = 0.0
                 lpips_test = 0.0
                 ssim_test = 0.0
+                absrel_test = 0.0
+                absrel_denom = 0
+                renderer = None
                 for idx, viewpoint in enumerate(config['cameras']):
+                    if renderer is None:
+                        renderer = setup_renderer(os.path.join(args.source_path.replace('dslr','scans'), 'mesh_aligned_0.05.ply'), viewpoint.image_width, viewpoint.image_height)
                     render_pkg = renderFunc(viewpoint, scene.gaussians, *renderArgs)
                     image = torch.clamp(render_pkg["render"], 0.0, 1.0).to("cuda")
+                    
+                    gt_depth = get_depth_map(renderer, viewpoint, device="cuda")
+                    mask = gt_depth!= float('inf')
+                    absrel_denom += torch.sum(mask).item()
+                    gt_depth = gt_depth[mask]
+                    rendered_depth = render_pkg["surf_depth"][mask]
+                    
                     gt_image = torch.clamp(viewpoint.original_image.to("cuda"), 0.0, 1.0)
                     if tb_writer and (idx < 5):
                         from utils.general_utils import colormap
@@ -390,7 +406,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
 
                         if iteration == testing_iterations[0]:
                             tb_writer.add_images(config['name'] + "_view_{}/ground_truth".format(viewpoint.image_name), gt_image[None], global_step=iteration)
-
+                    absrel_test += torch.sum(torch.abs(gt_depth - rendered_depth) / gt_depth)
                     l1_test += l1_loss(image, gt_image).mean().double()
                     psnr_test += psnr(image, gt_image).mean().double()
                     lpips_test += lpips(image, gt_image, 'vgg').mean().double()
@@ -400,18 +416,22 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                 l1_test /= len(config['cameras'])
                 lpips_test /= len(config['cameras'])
                 ssim_test /= len(config['cameras'])
+                absrel_test /= absrel_denom
                 if save and config['name'] == 'test':
                     metrics = {}
+                    
                     metrics['L1'] = l1_test.item()
                     metrics['PSNR'] = psnr_test.item()
                     metrics['LPIPS'] = lpips_test.item()
                     metrics['SSIM'] = ssim_test.item()
+                    metrics['DepthAbsRel'] = absrel_test.item()
                     metrics['Points'] = scene.gaussians.get_xyz.shape[0]
+                    
                     results_dir = os.path.join(model_path, "point_cloud", "iteration_{}".format(iteration))
                     os.makedirs(results_dir, exist_ok=True)
                     with open(os.path.join(results_dir, f'metrics.json'), 'w') as f:
                         json.dump(metrics, f)
-                print("\n[ITER {}] Evaluating {}: L1 {} PSNR {} LPIPS {} SSIM {}".format(iteration, config['name'], l1_test, psnr_test, lpips_test, ssim_test))
+                print("\n[ITER {}] Evaluating {}: L1 {} PSNR {} LPIPS {} SSIM {} DepthAbsRel {}".format(iteration, config['name'], l1_test, psnr_test, lpips_test, ssim_test, absrel_test))
                 if tb_writer:
                     tb_writer.add_scalar(config['name'] + '/loss_viewpoint - l1_loss', l1_test, iteration)
                     tb_writer.add_scalar(config['name'] + '/loss_viewpoint - psnr', psnr_test, iteration)
