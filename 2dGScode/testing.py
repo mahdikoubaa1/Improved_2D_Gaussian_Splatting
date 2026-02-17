@@ -36,6 +36,7 @@ import open3d as o3d
 import open3d.core as o3c
 
 import torch
+import pickle
 
 
 
@@ -65,33 +66,59 @@ if __name__ == "__main__":
     normal_predictor = torch.hub.load("hugoycj/DSINE-hub", "DSINE", trust_repo=True)
 
 # Convert legacy meshes to Tensor meshes
-    dataset, iteration, pipe = model.extract(args), args.iteration, pipeline.extract(args)
-    bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
-    background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+    #dataset, iteration, pipe = model.extract(args), args.iteration, pipeline.extract(args)
+    #bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
+    #background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+#
+    ##t_mesh2 = trimesh.load(os.path.join(args.source_path, '../scans', 'mesh_aligned_0.05.ply'))
+    #
+    #gaussians = GaussianModel(dataset.sh_degree)
+    #scene = Scene(dataset, gaussians, shuffle=False)
+    #denom=0
+    #absrel=0.0
+    #for viewpoint_camera in tqdm(scene.getTestCameras(), desc="Testing progress"):
+    #    sampled_masks = []
+    #    with torch.inference_mode():
+    #        render_pkg = render(viewpoint_camera, gaussians, pipe, background)
+    #        if os.path.exists(os.path.join(args.source_path, 'depths')):
+    #            
+    #            gt_depth = torch.load(os.path.join(args.source_path, 'depths', f'{viewpoint_camera.image_name}.pt'), map_location="cuda")
+    #        else:
+    #            gt_depth = get_depth_map(os.path.join(args.source_path.replace('dslr','scans'), 'mesh_aligned_0.05.ply'), viewpoint_camera, device="cuda")
+    #        rendered_depth = render_pkg["surf_depth"]
+    #        mask = gt_depth!= float('inf')
+    #        gt_depth = gt_depth[mask]
+    #        denom += torch.sum(mask).item()
+    #        rendered_depth = rendered_depth[mask]
+    #        absrel+=torch.sum(torch.abs(gt_depth - rendered_depth) / gt_depth).item()
+            
+    #absrel /= denom
+    
+    #print(f"Overall AbsRel Error: {absrel:.4f}")
+    # Load a .pt file
+    pt_file = os.path.join(args.source_path, 'depths', f'0001.pt')
+    img_file = os.path.join(args.source_path, 'images', f'0001.png')
+    mask_file = os.path.join(args.source_path, 'mask', f'001.png') 
+    
+    if os.path.exists(img_file):
+        img = cv2.imread(img_file)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    if mask_file and os.path.exists(mask_file):
+        mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
+        mask.resize(img.shape[0], img.shape[1])
+        mask=mask.astype(bool)
+        print(mask)
+    print(mask.shape, img.shape)
+    res=img[mask]
+    print(res.shape)
+    print ("Image shape: ", img.shape)
+    gt_depth = torch.load(pt_file, map_location="cuda",weights_only=False)
+    print("Loaded .pt file with keys: ", gt_depth.keys())
+    coords = gt_depth['coord'][:,[1,0]].astype(int)
+    print("Coords shape: ", coords.shape)
+    print("Depth map shape: ", img[coords[:,0], coords[:,1]])
+    print("Depth map shape: ", gt_depth['weight'].shape)
 
-    t_mesh2 = trimesh.load(os.path.join(args.source_path, '../scans', 'mesh_aligned_0.05.ply'))
-    
-    gaussians = GaussianModel(dataset.sh_degree)
-    scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
-    denom=0
-    absrel=0.0
-    for viewpoint_camera in tqdm(scene.getTestCameras(), desc="Testing progress"):
-        sampled_masks = []
-        with torch.inference_mode():
-            render_pkg = render(viewpoint_camera, gaussians, pipe, background)
-            
-            gt_depth = get_depth_map(os.path.join(args.source_path.replace('dslr','scans'), 'mesh_aligned_0.05.ply'), viewpoint_camera, device="cuda")
-            rendered_depth = render_pkg["surf_depth"]
-            mask = gt_depth!= float('inf')
-            gt_depth = gt_depth[mask]
-            denom += torch.sum(mask).item()
-            rendered_depth = rendered_depth[mask]
-            absrel+=torch.sum(torch.abs(gt_depth - rendered_depth) / gt_depth).item()
-            
-    absrel /= denom
-    
-    print(f"Overall AbsRel Error: {absrel:.4f}")
-            
 # Sample to point clouds
 
 # Calculate mean distances

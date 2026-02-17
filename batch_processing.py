@@ -34,24 +34,25 @@ if __name__ == "__main__":
     parser.add_argument('--dataset_path', type=str, default="/cluster/51/koubaa/data/scannet++")
     parser.add_argument('--scene', type=str, default='', help='scene to process')
     parser.add_argument('--output_path', type=str, default="/cluster/51/koubaa/data/output/scannet++/")
-    parser.add_argument('--subscene', type=str, default="dslr", choices=['iphone', 'dslr'], help='which subscene to process')
+    parser.add_argument('--subscene', type=str, default="dslr", choices=['iphone', 'dslr','other'], help='which subscene to process')
     parser.add_argument('--port', type=int, default=6009, help='port for visualization')
     args = parser.parse_args()
     dataset_path = args.dataset_path
     subscene = args.subscene
     scene = args.scene
-    modifications= {'iphone': ['exposure_optimization'], 'dslr': ['MCMC','depth Gaussian reinitialization','normal_depth_prior']}
+    modifications= {'iphone': ['exposure_optimization'], 'dslr': ['MCMC','depth Gaussian reinitialization','normal_depth_prior'], 'other': ['MCMC','depth Gaussian reinitialization','normal_depth_prior']}
     mod_list = modifications[subscene]
     all_combinations = []
     for r in range(len(mod_list) + 1):
         all_combinations.extend(combinations(mod_list, r))
     lambda_dist = {'7b6477cb95': 10, 'c50d2d1d42': 10, 'cc5237fd77': 1, '0b031f3119': 100} if subscene == 'dslr' else {'7b6477cb95': 10, 'c50d2d1d42': 10, 'cc5237fd77': 1, '0b031f3119': 10}
     subscene__options = {
-        'iphone':  {'train':'--depth_ratio 1 --images rgb --test_images ../dslr/resized_undistorted_images --train_transforms_file nerfstudio/transforms.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --port 6010 ',
+        'iphone':  {'train':'--depth_ratio 1 --geometric_test --images rgb  --test_images ../dslr/resized_undistorted_images --train_transforms_file nerfstudio/transforms.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --port 6010 ',
                     'render':'--depth_ratio 1 --images ../dslr/resized_undistorted_images --test_images ../dslr/resized_undistorted_images --train_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.1 --compute_chamfer --iteration 30000'},
-        'dslr': {'train':'--depth_ratio 1 --images resized_undistorted_images --test_images resized_undistorted_images --train_transforms_file nerfstudio/transforms_undistorted.json --test_transforms_file nerfstudio/transforms_undistorted.json --eval',
-                 'render':'--depth_ratio 1 --images ../dslr/resized_undistorted_images --test_images ../dslr/resized_undistorted_images --train_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.1 --compute_chamfer --iteration 30000'}
-
+        'dslr': {'train':'--depth_ratio 1 --geometric_test --images resized_undistorted_images --test_images resized_undistorted_images --train_transforms_file nerfstudio/transforms_undistorted.json --test_transforms_file nerfstudio/transforms_undistorted.json --eval',
+                 'render':'--depth_ratio 1 --images ../dslr/resized_undistorted_images --test_images ../dslr/resized_undistorted_images --train_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.1 --compute_chamfer --iteration 30000'},
+        'other': {'train':'--use_colmap --colmap_folder \'sparse/0\' --depth_ratio 1 --eval',
+                'render':'--use_colmap --colmap_folder \'sparse/0\' --depth_ratio 1'}
     }
     
     print("Total combinations to test: ", all_combinations)
@@ -68,9 +69,12 @@ if __name__ == "__main__":
                 print(f'\033[92m{k} enabled\033[0m')
             else:
                 print(f'\033[91m{k} disabled\033[0m')
-        
-        source_path = os.path.join(dataset_path,'data',scene, subscene)
-        model_path = os.path.join(args.output_path,scene, subscene, '-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else "base_model")
+        if subscene == 'other':
+            source_path = os.path.join(dataset_path,scene)
+            model_path = os.path.join(args.output_path,scene, '-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else "base_model")
+        else:
+            source_path = os.path.join(dataset_path,'data',scene, subscene)
+            model_path = os.path.join(args.output_path,scene, subscene, '-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else "base_model")
         if os.path.exists(os.path.join(model_path, 'point_cloud', 'iteration_30000', 'point_cloud.ply')) and os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply')):
             print(f"Model and render already exist for combination {comb}. Skipping...")
             continue
@@ -79,10 +83,13 @@ if __name__ == "__main__":
             with open(os.path.join(model_path, '../base_model/point_cloud/iteration_30000/metrics.json'), 'r') as log_file:
                 log_data = json.load(log_file)
                 cap_max = log_data['Points']
-                reinit_points = ((log_data['Points']//100000)-1)*100000
+                if subscene == 'other':
+                    reinit_points = log_data['Points']
+                else:
+                    reinit_points = ((log_data['Points']//100000)-1)*100000
                 modification_opts['MCMC'] = f'--mcmc --cap_max {cap_max}'
                 modification_opts['depth Gaussian reinitialization'] = f'--depth_reinit_every 5000 --reinit_target_points {reinit_points}'
-        train_cmd = f'python 2dGScode/train.py --source_path {source_path} --model_path {model_path}'+ ' ' + ' '.join([modification_opts[opt] for opt in comb]) + ' ' + subscene__options[subscene]['train']+ f' --lambda_dist {lambda_dist[scene] if scene in lambda_dist else 10}'+ f' --port {args.port}'
+        train_cmd = f'python 2dGScode/train.py --source_path {source_path} --model_path {model_path}'+ ' ' + ' '.join([modification_opts[opt] for opt in comb]) + ' ' + subscene__options[subscene]['train']+ f' --lambda_dist {lambda_dist[scene] if scene in lambda_dist else 100 if subscene == "other" else 10}'+ f' --port {args.port}'
         
         render_cmd = f'python 2dGScode/render.py --source_path {source_path} --model_path {model_path}' + ' ' + subscene__options[subscene]['render']
         try:

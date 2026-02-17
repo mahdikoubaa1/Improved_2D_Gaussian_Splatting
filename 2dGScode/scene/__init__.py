@@ -39,9 +39,11 @@ class Scene:
 
         self.train_cameras = {}
         self.test_cameras = {}
-
+        print(os.path.join(args.source_path, args.colmap_folder) )
+        
         if args.use_colmap and os.path.exists(os.path.join(args.source_path, args.colmap_folder)):
             scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval,colmap_folder=args.colmap_folder)
+
         elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")) or os.path.exists(os.path.join(args.source_path, args.train_transforms_file)):
             print("Found transforms_train.json file, assuming Blender data set!")
             scene_info = sceneLoadTypeCallbacks["Blender"](args)
