@@ -401,7 +401,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                             tb_writer.add_images(config['name'] + "_view_{}/ground_truth".format(viewpoint.image_name), gt_image[None], global_step=iteration)
                     if geometric_test:
                         if renderer is None:
-                            renderer = setup_renderer(os.path.join(args.source_path.replace('dslr','scans'), 'mesh_aligned_0.05.ply'), viewpoint.image_width, viewpoint.image_height)
+                            renderer = setup_renderer(os.path.join(args.source_path.replace('dslr','scans').replace('iphone','scans'), 'mesh_aligned_0.05.ply'), viewpoint.image_width, viewpoint.image_height)
                         gt_depth = get_depth_map(renderer, viewpoint, device="cuda")
                         mask = gt_depth!= float('inf')
                         absrel_denom += torch.sum(mask).item()
