@@ -51,8 +51,8 @@ if __name__ == "__main__":
                     'render':'--depth_ratio 1 --images ../dslr/resized_undistorted_images --test_images ../dslr/resized_undistorted_images --train_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.1 --compute_chamfer --iteration 30000'},
         'dslr': {'train':'--depth_ratio 1 --geometric_test --images resized_undistorted_images --test_images resized_undistorted_images --train_transforms_file nerfstudio/transforms_undistorted.json --test_transforms_file nerfstudio/transforms_undistorted.json --eval',
                  'render':'--depth_ratio 1 --images ../dslr/resized_undistorted_images --test_images ../dslr/resized_undistorted_images --train_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.1 --compute_chamfer --iteration 30000'},
-        'other': {'train':'--use_colmap --colmap_folder \'sparse/0\' --depth_ratio 1 --eval',
-                'render':'--use_colmap --colmap_folder \'sparse/0\' --depth_ratio 1'}
+        'other': {'train':'--use_colmap --resolution 2 --colmap_folder \'sparse/0\' --depth_ratio 1 --eval',
+                'render':'--use_colmap --colmap_folder \'sparse/0\' --depth_ratio 1 --skip_train --skip_test'}
     }
     
     print("Total combinations to test: ", all_combinations)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
             attempt = 0
             print("Executing training command: ", train_cmd)
 
-            while (attempt==0  or not os.path.exists(os.path.join(model_path, 'point_cloud', 'iteration_30000', 'point_cloud.ply'))):
+            while ( not os.path.exists(os.path.join(model_path, 'point_cloud', 'iteration_30000', 'point_cloud.ply'))):
                 os.system(train_cmd)
                 attempt += 1
                 if attempt >= 5:
@@ -106,8 +106,18 @@ if __name__ == "__main__":
             attempt = 0
 
             print("Executing rendering command: ", render_cmd)
-            while (attempt==0 or not os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply'))):
+            while ( not os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply'))):
                 os.system(render_cmd)
+                ply_file = f"{args.output_path}/{scene}/{'-'.join([opt for opt in comb]) if len(comb)>0 else 'base_model'}/train/ours_30000/"
+                if subscene == 'other':
+                    scan_id = scene[4:]
+                    string = f"python 2dGScode/scripts/eval_dtu/evaluate_single_scene.py " + \
+                        f"--input_mesh {ply_file}fuse_post.ply " + \
+                        f"--scan_id {scan_id} --output_dir {ply_file}../../point_cloud/iteration_30000 " + \
+                        f"--mask_dir {args.dataset_path} " + \
+                        f"--DTU {args.dataset_path}_Official"
+                    print("Executing evaluation command: ", string)
+                    os.system(string)
                 attempt += 1
                 if attempt >= 5:
                     print(f"Rendering failed after {attempt} attempts. Skipping to next combination.")

@@ -162,8 +162,6 @@ if __name__ == '__main__':
         existing_metrics = json.load(f)
     with open(f'{args.vis_out_dir}/metrics.json', 'w') as fp:
         existing_metrics.update({
-            'mean_d2s': mean_d2s,
-            'mean_s2d': mean_s2d,
-            'overall': over_all,
+            'CD': over_all,
         })
         json.dump(existing_metrics, fp, indent=True)

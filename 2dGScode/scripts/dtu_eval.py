@@ -3,7 +3,7 @@ import os
 from argparse import ArgumentParser
 
 dtu_scenes = ['scan24', 'scan37', 'scan40', 'scan55', 'scan63', 'scan65', 'scan69', 'scan83', 'scan97', 'scan105', 'scan106', 'scan110', 'scan114', 'scan118', 'scan122']
-dtu_scenes = ['scan24', 'scan40', 'scan122', 'scan55']
+dtu_scenes = ['scan55']
 
 mod_list = ['MCMC', 'depth_Gaussian_reinitialization', 'normal_depth_prior']
 all_combinations = []
@@ -57,4 +57,5 @@ if not args.skip_metrics:
                 f"--scan_id {scan_id} --output_dir {ply_file}../../point_cloud/iteration_{iteration} " + \
                 f"--mask_dir {args.dtu} " + \
             f"--DTU {args.DTU_Official}"
+            print("Executing evaluation command: ", string)
             os.system(string)
