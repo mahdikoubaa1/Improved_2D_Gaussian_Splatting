@@ -158,9 +158,12 @@ if __name__ == '__main__':
     print(mean_d2s, mean_s2d, over_all)
     
     import json
-    with open(f'{args.vis_out_dir}/results.json', 'w') as fp:
-        json.dump({
+    with open(f'{args.vis_out_dir}/metrics.json', 'r') as f:
+        existing_metrics = json.load(f)
+    with open(f'{args.vis_out_dir}/metrics.json', 'w') as fp:
+        existing_metrics.update({
             'mean_d2s': mean_d2s,
             'mean_s2d': mean_s2d,
             'overall': over_all,
-        }, fp, indent=True)
+        })
+        json.dump(existing_metrics, fp, indent=True)

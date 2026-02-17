@@ -1,8 +1,16 @@
+from itertools import combinations
 import os
 from argparse import ArgumentParser
 
 dtu_scenes = ['scan24', 'scan37', 'scan40', 'scan55', 'scan63', 'scan65', 'scan69', 'scan83', 'scan97', 'scan105', 'scan106', 'scan110', 'scan114', 'scan118', 'scan122']
+dtu_scenes = ['scan24', 'scan40', 'scan122', 'scan55']
 
+mod_list = ['MCMC', 'depth_Gaussian_reinitialization', 'normal_depth_prior']
+all_combinations = []
+for r in range(len(mod_list) + 1):
+        all_combinations.extend(combinations(mod_list, r))
+all_combinations = ['-'.join(comb) if comb else 'base_model' for comb in all_combinations]
+        
 parser = ArgumentParser(description="Full evaluation script parameters")
 parser.add_argument("--skip_training", action="store_true")
 parser.add_argument("--skip_rendering", action="store_true")
@@ -40,12 +48,13 @@ if not args.skip_metrics:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     for scene in dtu_scenes:
         scan_id = scene[4:]
-        ply_file = f"{args.output_path}/{scene}/train/ours_30000/"
         iteration = 30000
-        string = f"python {script_dir}/eval_dtu/evaluate_single_scene.py " + \
-            f"--input_mesh {args.output_path}/{scene}/train/ours_30000/fuse_post.ply " + \
-            f"--scan_id {scan_id} --output_dir {script_dir}/tmp/scan{scan_id} " + \
-            f"--mask_dir {args.dtu} " + \
+        for comb in all_combinations:
+            print (f"Evaluating combination: {comb} for scene: {scene}")
+            ply_file = f"{args.output_path}/{scene}/{comb}/train/ours_30000/"
+            string = f"python {script_dir}/eval_dtu/evaluate_single_scene.py " + \
+                f"--input_mesh {ply_file}fuse_post.ply " + \
+                f"--scan_id {scan_id} --output_dir {ply_file}../../point_cloud/iteration_{iteration} " + \
+                f"--mask_dir {args.dtu} " + \
             f"--DTU {args.DTU_Official}"
-        
-        os.system(string)
+            os.system(string)

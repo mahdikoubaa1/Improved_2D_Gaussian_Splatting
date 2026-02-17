@@ -89,7 +89,7 @@ if __name__ == "__main__":
                     reinit_points = ((log_data['Points']//100000)-1)*100000
                 modification_opts['MCMC'] = f'--mcmc --cap_max {cap_max}'
                 modification_opts['depth Gaussian reinitialization'] = f'--depth_reinit_every 5000 --reinit_target_points {reinit_points}'
-        train_cmd = f'python 2dGScode/train.py --source_path {source_path} --model_path {model_path}'+ ' ' + ' '.join([modification_opts[opt] for opt in comb]) + ' ' + subscene__options[subscene]['train']+ f' --lambda_dist {lambda_dist[scene] if scene in lambda_dist else 100 if subscene == "other" else 10}'+ f' --port {args.port}'
+        train_cmd = f'python 2dGScode/train.py --source_path {source_path} --model_path {model_path}'+ ' ' + ' '.join([modification_opts[opt] for opt in comb]) + ' ' + subscene__options[subscene]['train']+ f' --lambda_dist {lambda_dist[scene] if scene in lambda_dist else 1000 if subscene == "other" else 10}'+ f' --port {args.port}'
         
         render_cmd = f'python 2dGScode/render.py --source_path {source_path} --model_path {model_path}' + ' ' + subscene__options[subscene]['render']
         try:
