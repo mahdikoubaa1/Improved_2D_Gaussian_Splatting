@@ -115,15 +115,5 @@ if __name__ == "__main__":
             mesh_post = cull_mesh(scene.getTrainCameras(), mesh_post, masks_path=os.path.join(args.source_path, args.masks))
             o3d.io.write_triangle_mesh(os.path.join(train_dir, name.replace('.ply', '_post.ply')), mesh_post)
             print("mesh culled and saved at {}".format(os.path.join(train_dir, name.replace('.ply', '_post.ply'))))
-        if args.compute_chamfer:
-            print("computing chamfer distance ...")
-            # load ground truth mesh
-            gt_mesh = o3d.io.read_triangle_mesh(os.path.join(args.source_path, '../scans', 'mesh_aligned_0.05.ply'))
-            chamfer_dist = compute_chamfer_distance(mesh_post, gt_mesh, n_points=args.num_points)
-            results_dir = os.path.join(args.model_path, "point_cloud", "iteration_{}".format(iteration))
-            os.makedirs(results_dir, exist_ok=True)
-            with open(os.path.join(results_dir, 'metrics.json'), 'r') as f:
-                metrics = json.load(f)
-            metrics.update({"CD": chamfer_dist})
-            with open(os.path.join(results_dir, 'metrics.json'), 'w') as f:
-                json.dump(metrics, f)
+
+            

@@ -1,3 +1,4 @@
+import json
 import cv2
 import torch
 import trimesh
@@ -11,7 +12,7 @@ from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
 from gaussian_renderer import GaussianModel
-from utils.mesh_utils import GaussianExtractor, to_cam_open3d, post_process_mesh
+from utils.mesh_utils import GaussianExtractor, to_cam_open3d, post_process_mesh, setup_renderer, get_depth_map
 from utils.render_utils import generate_path, create_videos
 import torch
 import torch.nn as nn
@@ -24,7 +25,6 @@ import glob
 from skimage.morphology import dilation, disk
 import argparse
 from utils.mono_prior import estimate_depth, estimate_normal
-from utils.mesh_utils import get_depth_map
 import trimesh
 from pathlib import Path
 import subprocess
@@ -66,58 +66,50 @@ if __name__ == "__main__":
     normal_predictor = torch.hub.load("hugoycj/DSINE-hub", "DSINE", trust_repo=True)
 
 # Convert legacy meshes to Tensor meshes
-    #dataset, iteration, pipe = model.extract(args), args.iteration, pipeline.extract(args)
-    #bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
-    #background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+    dataset, iteration, pipe = model.extract(args), args.iteration, pipeline.extract(args)
+    bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
+    background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 #
     ##t_mesh2 = trimesh.load(os.path.join(args.source_path, '../scans', 'mesh_aligned_0.05.ply'))
+
     #
-    #gaussians = GaussianModel(dataset.sh_degree)
-    #scene = Scene(dataset, gaussians, shuffle=False)
-    #denom=0
-    #absrel=0.0
-    #for viewpoint_camera in tqdm(scene.getTestCameras(), desc="Testing progress"):
-    #    sampled_masks = []
-    #    with torch.inference_mode():
-    #        render_pkg = render(viewpoint_camera, gaussians, pipe, background)
-    #        if os.path.exists(os.path.join(args.source_path, 'depths')):
-    #            
-    #            gt_depth = torch.load(os.path.join(args.source_path, 'depths', f'{viewpoint_camera.image_name}.pt'), map_location="cuda")
-    #        else:
-    #            gt_depth = get_depth_map(os.path.join(args.source_path.replace('dslr','scans'), 'mesh_aligned_0.05.ply'), viewpoint_camera, device="cuda")
-    #        rendered_depth = render_pkg["surf_depth"]
-    #        mask = gt_depth!= float('inf')
-    #        gt_depth = gt_depth[mask]
-    #        denom += torch.sum(mask).item()
-    #        rendered_depth = rendered_depth[mask]
-    #        absrel+=torch.sum(torch.abs(gt_depth - rendered_depth) / gt_depth).item()
+    gaussians = GaussianModel(dataset.sh_degree)
+    scene = Scene(dataset, gaussians, shuffle=False)
+    denom=0
+    absrel=0.0
+    geo_path= os.path.join(dataset.source_path, pipe.geo_name)
+    renderer = None
+    for viewpoint_camera in tqdm(scene.getTestCameras(), desc="Testing progress"):
+        sampled_masks = []
+        with torch.inference_mode():
+            render_pkg = render(viewpoint_camera, gaussians, pipe, background)
+            if renderer is None:
+                renderer = setup_renderer(geo_path, viewpoint_camera.image_width, viewpoint_camera.image_height,geotype=pipe.geo_type)
             
-    #absrel /= denom
-    
+            gt_depth = get_depth_map(renderer, viewpoint_camera, device="cuda")
+            rendered_depth = render_pkg["surf_depth"]
+            
+
+            mask = gt_depth!= float('inf')
+            gt_depth = gt_depth[mask]
+            rendered_depth = rendered_depth[mask]
+
+
+            absrel+=torch.sum(torch.abs(gt_depth - rendered_depth) / gt_depth).item()
+            
+            denom += torch.sum(mask).item()
+    absrel /= denom
+    results_dir = os.path.join(args.model_path, "point_cloud", "iteration_{}".format(iteration))
+    os.makedirs(results_dir, exist_ok=True)
+    with open(os.path.join(results_dir, 'metrics.json'), 'r') as f:
+        metrics = json.load(f)
+    metrics.update({"DepthAbsRel": absrel})
+    with open(os.path.join(results_dir, 'metrics.json'), 'w') as f:
+        json.dump(metrics, f)
+    print (f"Overall AbsRel Error: {absrel:.4f}")
+
     #print(f"Overall AbsRel Error: {absrel:.4f}")
     # Load a .pt file
-    pt_file = os.path.join(args.source_path, 'depths', f'0001.pt')
-    img_file = os.path.join(args.source_path, 'images', f'0001.png')
-    mask_file = os.path.join(args.source_path, 'mask', f'001.png') 
-    
-    if os.path.exists(img_file):
-        img = cv2.imread(img_file)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    if mask_file and os.path.exists(mask_file):
-        mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-        mask.resize(img.shape[0], img.shape[1])
-        mask=mask.astype(bool)
-        print(mask)
-    print(mask.shape, img.shape)
-    res=img[mask]
-    print(res.shape)
-    print ("Image shape: ", img.shape)
-    gt_depth = torch.load(pt_file, map_location="cuda",weights_only=False)
-    print("Loaded .pt file with keys: ", gt_depth.keys())
-    coords = gt_depth['coord'][:,[1,0]].astype(int)
-    print("Coords shape: ", coords.shape)
-    print("Depth map shape: ", img[coords[:,0], coords[:,1]])
-    print("Depth map shape: ", gt_depth['weight'].shape)
 
 # Sample to point clouds
 

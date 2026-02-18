@@ -128,7 +128,7 @@ if __name__ == '__main__':
     stl_hom = np.concatenate([stl, np.ones_like(stl[:,:1])], -1)
     above = (ground_plane.reshape((1,4)) * stl_hom).sum(-1) > 0
     stl_above = stl[above]
-
+    
     nn_engine.fit(data_in)
     dist_s2d, idx_s2d = nn_engine.kneighbors(stl_above, n_neighbors=1, return_distance=True)
     mean_s2d = dist_s2d[dist_s2d < max_dist].mean()

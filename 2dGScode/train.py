@@ -194,7 +194,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 if mono_normal_cos_loss.item() > 0:
                     tb_writer.add_scalar('train_loss_patches/mono_normal_cos_loss', mono_normal_cos_loss.item(), iteration)
 
-            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background),save=iteration in saving_iterations, model_path=scene.model_path, geometric_test=pipe.geometric_test)
+            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background),save=iteration in saving_iterations, model_path=scene.model_path, geo_type=pipe.geo_type, geo_path=os.path.join(dataset.source_path, pipe.geo_name))
             if (iteration in saving_iterations):
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
@@ -229,10 +229,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         gt = view.original_image[0:3, :, :]
                         render_pkg = render(view, gaussians, pipe, background)
                         if view.gt_alpha_mask is not None:
-                            print (view.gt_alpha_mask.shape)
-                            print (view.original_image.shape)
                             valid_mask =view.gt_alpha_mask.bool().reshape(-1)
-                            print (valid_mask.shape)
                         else:
                             valid_mask = render_pkg["rend_alpha"].reshape(-1) > 0.7
                         
@@ -353,7 +350,7 @@ def prepare_output_and_logger(args):
     return tb_writer
 
 @torch.no_grad()
-def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_iterations, scene : Scene, renderFunc, renderArgs, save=False, model_path='',geometric_test=False):
+def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_iterations, scene : Scene, renderFunc, renderArgs, save=False, model_path='', geo_type='mesh', geo_path=''):
     if tb_writer:
         tb_writer.add_scalar('train_loss_patches/reg_loss', Ll1.item(), iteration)
         tb_writer.add_scalar('train_loss_patches/total_loss', loss.item(), iteration)
@@ -406,9 +403,8 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
 
                         if iteration == testing_iterations[0]:
                             tb_writer.add_images(config['name'] + "_view_{}/ground_truth".format(viewpoint.image_name), gt_image[None], global_step=iteration)
-                    if geometric_test:
                         if renderer is None:
-                            renderer = setup_renderer(os.path.join(args.source_path.replace('dslr','scans').replace('iphone','scans'), 'mesh_aligned_0.05.ply'), viewpoint.image_width, viewpoint.image_height)
+                            renderer = setup_renderer(geo_path, viewpoint.image_width, viewpoint.image_height,geotype=geo_type)
                         gt_depth = get_depth_map(renderer, viewpoint, device="cuda")
                         mask = gt_depth!= float('inf')
                         absrel_denom += torch.sum(mask).item()
@@ -424,8 +420,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                 l1_test /= len(config['cameras'])
                 lpips_test /= len(config['cameras'])
                 ssim_test /= len(config['cameras'])
-                if geometric_test:
-                    absrel_test /= absrel_denom
+                absrel_test /= absrel_denom
                 if save and config['name'] == 'test':
                     metrics = {}
                     
@@ -433,15 +428,14 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                     metrics['PSNR'] = psnr_test.item()
                     metrics['LPIPS'] = lpips_test.item()
                     metrics['SSIM'] = ssim_test.item()
-                    if geometric_test:
-                        metrics['DepthAbsRel'] = absrel_test.item()
+                    metrics['DepthAbsRel'] = absrel_test.item()
                     metrics['Points'] = scene.gaussians.get_xyz.shape[0]
                     
                     results_dir = os.path.join(model_path, "point_cloud", "iteration_{}".format(iteration))
                     os.makedirs(results_dir, exist_ok=True)
                     with open(os.path.join(results_dir, f'metrics.json'), 'w') as f:
                         json.dump(metrics, f)
-                print(f"\n[ITER {iteration}] Evaluating {config['name']}: L1 {l1_test} PSNR {psnr_test} LPIPS {lpips_test} SSIM {ssim_test} DepthAbsRel {absrel_test if geometric_test else 'N/A'}")
+                print(f"\n[ITER {iteration}] Evaluating {config['name']}: L1 {l1_test} PSNR {psnr_test} LPIPS {lpips_test} SSIM {ssim_test} DepthAbsRel {absrel_test}")
                 if tb_writer:
                     tb_writer.add_scalar(config['name'] + '/loss_viewpoint - l1_loss', l1_test, iteration)
                     tb_writer.add_scalar(config['name'] + '/loss_viewpoint - psnr', psnr_test, iteration)
@@ -458,7 +452,7 @@ if __name__ == "__main__":
     parser.add_argument('--ip', type=str, default="127.0.0.1")
     parser.add_argument('--port', type=int, default=6009)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
-    parser.add_argument("--test_iterations", nargs="+", type=int, default=[i for i in range(15000, 60001, 15000)])
+    parser.add_argument("--test_iterations", nargs="+", type=int, default=[i for i in range(1, 60001, 15000)])
     parser.add_argument("--save_iterations", nargs="+", type=int, default=[i for i in range(30000, 60001, 1000)])
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])

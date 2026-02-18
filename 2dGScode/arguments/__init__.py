@@ -82,7 +82,9 @@ class PipelineParams(ParamGroup):
         self.compute_cov3D_python = False
         self.depth_ratio = 0.0
         self.debug = False
-        self.geometric_test = False
+        self.geo_type = 'mesh'
+        self.geo_name = '../scans/mesh_aligned_0.05.ply'
+        
         super().__init__(parser, "Pipeline Parameters")
 
 class OptimizationParams(ParamGroup):

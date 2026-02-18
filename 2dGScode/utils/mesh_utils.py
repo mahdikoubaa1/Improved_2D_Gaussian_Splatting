@@ -60,23 +60,26 @@ def compute_chamfer_distance(mesh_pred: o3d.geometry.TriangleMesh, mesh_gt: o3d.
         float: The Chamfer Distance between the two meshes.
     """
     # Sample points uniformly from both meshes
-    pcd_pred = mesh_pred.sample_points_uniformly(number_of_points=n_points)
-    pcd_gt = mesh_gt.sample_points_uniformly(number_of_points=n_points)
 
     mesh_pred = o3d.t.geometry.TriangleMesh.from_legacy(mesh_pred)
-    mesh_gt = o3d.t.geometry.TriangleMesh.from_legacy(mesh_gt)
 # Sample to point clouds
-    pcd1 = mesh_pred.sample_points_uniformly(n_points)
-    pcd2 = mesh_gt.sample_points_uniformly(n_points)
+    pcd_pred = mesh_pred.sample_points_uniformly(n_points)
+    
+    mesh_gt = o3d.t.geometry.TriangleMesh.from_legacy(mesh_gt)
+    pcd_gt = mesh_gt.sample_points_uniformly(n_points)
     params = o3d.t.geometry.MetricParameters()
-    metrics = pcd1.compute_metrics(pcd2, [o3d.t.geometry.Metric.ChamferDistance],params)
+    metrics = pcd_pred.compute_metrics(pcd_gt, [o3d.t.geometry.Metric.ChamferDistance],params)
 # Calculate mean distances
     print(f"CD: {metrics[o3d.t.geometry.Metric.ChamferDistance].item()}")
 
     return metrics[o3d.t.geometry.Metric.ChamferDistance].item()
-def setup_renderer(mesh_path, width, height):
-    mesh = o3d.io.read_triangle_mesh(mesh_path)
-    mesh.compute_vertex_normals()
+def setup_renderer(path, width, height, geotype="mesh"):
+    
+    if geotype == "mesh":
+        geo = o3d.io.read_triangle_mesh(path)
+        geo.compute_vertex_normals()
+    elif geotype == "pcd":
+        geo = o3d.io.read_point_cloud(path)
 
     # 2. Initialize OffscreenRenderer
     renderer = o3d.visualization.rendering.OffscreenRenderer(width, height)
@@ -85,7 +88,9 @@ def setup_renderer(mesh_path, width, height):
     # We use a simple unlit shader to ensure the geometry is processed correctly
     material = o3d.visualization.rendering.MaterialRecord()
     material.shader = "defaultUnlit"
-    renderer.scene.add_geometry("mesh", mesh, material)
+    if geotype == 'pcd':
+        pass #material.point_size = 2.0
+    renderer.scene.add_geometry(geotype, geo, material)
     return renderer
 
 def get_depth_map(renderer, viewpoint_camera, device="cuda"):
