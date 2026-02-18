@@ -61,7 +61,7 @@ if __name__ == "__main__":
     #file_list = read_file_to_list_clean(os.path.join(dataset_path, "to_download.txt"))
     #val_list = read_file_to_list_clean(os.path.join(dataset_path, "splits/nvs_sem_val.txt"))
     #downloaded_val_list = [line for line in file_list if line in val_list]
-    #all_combinations= [i for i in all_combinations if 'MCMC' in i and len(i)==1] # Filter combinations to only those that include at least one of the modifications
+    all_combinations= [i for i in all_combinations if 'depth Gaussian reinitialization' in i] # Filter combinations to only those that include at least one of the modifications
     print("Filtered combinations to test: ", len(all_combinations))
     for comb in all_combinations:
         for k in modification_opts.keys():
@@ -75,9 +75,9 @@ if __name__ == "__main__":
         else:
             source_path = os.path.join(dataset_path,'data',scene, subscene)
             model_path = os.path.join(args.output_path,scene, subscene, '-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else "base_model")
-        if os.path.exists(os.path.join(model_path, 'point_cloud', 'iteration_30000', 'point_cloud.ply')) and os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply')):
-            print(f"Model and render already exist for combination {comb}. Skipping...")
-            continue
+        #if os.path.exists(os.path.join(model_path, 'point_cloud', 'iteration_30000', 'point_cloud.ply')) and os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply')):
+        #    print(f"Model and render already exist for combination {comb}. Skipping...")
+        #    continue
         if 'MCMC' in comb or 'depth Gaussian reinitialization' in comb:
             os.makedirs(model_path, exist_ok=True)
             with open(os.path.join(model_path, '../base_model/point_cloud/iteration_30000/metrics.json'), 'r') as log_file:
@@ -96,7 +96,7 @@ if __name__ == "__main__":
             attempt = 0
             print("Executing training command: ", train_cmd)
 
-            while ( not os.path.exists(os.path.join(model_path, 'point_cloud', 'iteration_30000', 'point_cloud.ply'))):
+            while (attempt==0 or not os.path.exists(os.path.join(model_path, 'point_cloud', 'iteration_30000', 'point_cloud.ply'))):
                 os.system(train_cmd)
                 attempt += 1
                 if attempt >= 5:
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             attempt = 0
 
             print("Executing rendering command: ", render_cmd)
-            while ( not os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply'))):
+            while (attempt==0 or not os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply'))):
                 os.system(render_cmd)
                 ply_file = f"{args.output_path}/{scene}/{'-'.join([opt for opt in comb]) if len(comb)>0 else 'base_model'}/train/ours_30000/"
                 if subscene == 'other':

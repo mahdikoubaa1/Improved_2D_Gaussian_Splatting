@@ -228,7 +228,14 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     for view in tqdm(views):
                         gt = view.original_image[0:3, :, :]
                         render_pkg = render(view, gaussians, pipe, background)
-                        valid_mask = render_pkg["rend_alpha"].reshape(-1) > 0.7
+                        if view.gt_alpha_mask is not None:
+                            print (view.gt_alpha_mask.shape)
+                            print (view.original_image.shape)
+                            valid_mask =view.gt_alpha_mask.bool().reshape(-1)
+                            print (valid_mask.shape)
+                        else:
+                            valid_mask = render_pkg["rend_alpha"].reshape(-1) > 0.7
+                        
                         #alpha_bins = torch.histc(render_pkg["rend_alpha"], bins=100, min=0.0, max=1.0)
                         #print("Alpha distribution (bins of 0.1):", alpha_bins)
                         out_pts = depths_to_points(view, render_pkg["surf_depth"])[valid_mask]
