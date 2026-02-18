@@ -120,12 +120,12 @@ if __name__ == "__main__":
                         f"--DTU {args.dataset_path}_Official"
                     print("Executing evaluation command: ", string)
                     os.system(string)
-                    #string = f"python 2dGScode/calculate_absrel.py --source_path {source_path} --model_path {model_path} --depth_ratio 1 --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.10  --iteration 30000 --use_colmap --colmap_folder 'sparse/0' --geo_type pcd --geo_name pcd.ply --resolution 2"
-                    #print (string)
-                    #os.system(string)
-                #elif subscene == 'dslr' or subscene == 'iphone':
-                #    string = f"python 2dGScode/scripts/eval_dslr/evaluate_single_scene.py " +
-                    
+                elif subscene == 'dslr' or subscene == 'iphone':
+                    string = f"python 2dGScode/scripts/eval_scannetpp/evaluate_single_scene.py " + \
+                        f"--input_mesh {os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply')} " + \
+                        f"--gt_mesh {os.path.join(source_path, '../scans', 'mesh_aligned_0.05.ply')} " 
+                    print("Executing evaluation command: ", string)
+                    os.system(string)
                 attempt += 1
                 if attempt >= 5:
                     print(f"Rendering failed after {attempt} attempts. Skipping to next combination.")
