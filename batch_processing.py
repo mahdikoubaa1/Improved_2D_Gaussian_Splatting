@@ -45,6 +45,7 @@ if __name__ == "__main__":
     all_combinations = []
     for r in range(len(mod_list) + 1):
         all_combinations.extend(combinations(mod_list, r))
+    #all_combinations = all_combinations[-3:] # process combinations with more modifications first
     lambda_dist = {'7b6477cb95': 10, 'c50d2d1d42': 10, 'cc5237fd77': 1, '0b031f3119': 100} if subscene == 'dslr' else {'7b6477cb95': 10, 'c50d2d1d42': 10, 'cc5237fd77': 1, '0b031f3119': 10}
     subscene__options = {
         'iphone':  {'train':'--depth_ratio 1 --geometric_test --images rgb  --test_images ../dslr/resized_undistorted_images --train_transforms_file nerfstudio/transforms.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval  ',
@@ -107,20 +108,21 @@ if __name__ == "__main__":
 
             print("Executing rendering command: ", render_cmd)
             while (attempt==0 or not os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply'))):
-                os.system(render_cmd)
+                #os.system(render_cmd)
                 
                 if subscene == 'dtu':
-                    ply_file = f"{args.output_path}/{scene}/{'-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else 'base_model'}/train/ours_30000/"
+                    ply_file = os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply')
                     scan_id = scene[4:]
                     string = f"python 2dGScode/scripts/eval_dtu/evaluate_single_scene.py " + \
-                        f"--input_mesh {ply_file}fuse_post.ply " + \
-                        f"--scan_id {scan_id} --output_dir {ply_file}../../point_cloud/iteration_30000 " + \
+                        f"--input_mesh {ply_file} " + \
+                        f"--scan_id {scan_id} --output_dir {os.path.join(model_path, 'point_cloud', 'iteration_30000')} " + \
                         f"--mask_dir {args.dataset_path} " + \
                         f"--DTU {args.dataset_path}_Official"
                     print("Executing evaluation command: ", string)
                     os.system(string)
-                    string = f"python 2dGScode/calculate_absrel.py --source_path {source_path} --model_path {model_path} --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.10  --iteration 30000 --use_colmap --colmap_folder 'sparse/0' --geo_type pcd --geo_name pcd.ply --resolution 2"
-                    os.system(string)
+                    #string = f"python 2dGScode/calculate_absrel.py --source_path {source_path} --model_path {model_path} --depth_ratio 1 --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.10  --iteration 30000 --use_colmap --colmap_folder 'sparse/0' --geo_type pcd --geo_name pcd.ply --resolution 2"
+                    #print (string)
+                    #os.system(string)
                 #elif subscene == 'dslr' or subscene == 'iphone':
                 #    string = f"python 2dGScode/scripts/eval_dslr/evaluate_single_scene.py " +
                     

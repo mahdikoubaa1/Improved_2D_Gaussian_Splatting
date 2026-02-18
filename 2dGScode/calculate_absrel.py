@@ -63,18 +63,18 @@ if __name__ == "__main__":
 
     args = get_combined_args(parser)
     print("Rendering " + args.model_path)
-    normal_predictor = torch.hub.load("hugoycj/DSINE-hub", "DSINE", trust_repo=True)
 
 # Convert legacy meshes to Tensor meshes
-    dataset, iteration, pipe = model.extract(args), args.iteration, pipeline.extract(args)
-    bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
-    background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+
 #
     ##t_mesh2 = trimesh.load(os.path.join(args.source_path, '../scans', 'mesh_aligned_0.05.ply'))
 
     #
+    dataset, iteration, pipe = model.extract(args), args.iteration, pipeline.extract(args)
     gaussians = GaussianModel(dataset.sh_degree)
-    scene = Scene(dataset, gaussians, shuffle=False)
+    scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
+    bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
+    background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
     denom=0
     absrel=0.0
     geo_path= os.path.join(dataset.source_path, pipe.geo_name)
@@ -88,7 +88,8 @@ if __name__ == "__main__":
             
             gt_depth = get_depth_map(renderer, viewpoint_camera, device="cuda")
             rendered_depth = render_pkg["surf_depth"]
-            
+
+
 
             mask = gt_depth!= float('inf')
             gt_depth = gt_depth[mask]
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     metrics.update({"DepthAbsRel": absrel})
     with open(os.path.join(results_dir, 'metrics.json'), 'w') as f:
         json.dump(metrics, f)
-    print (f"Overall AbsRel Error: {absrel:.4f}")
+    #print (f"Overall AbsRel Error: {absrel:.4f}")
 
     #print(f"Overall AbsRel Error: {absrel:.4f}")
     # Load a .pt file

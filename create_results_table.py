@@ -13,12 +13,12 @@ if __name__ == "__main__":
     parser= argparse.ArgumentParser()
     parser.add_argument('--dataset_path', type=str, default="/cluster/51/koubaa/data/scannet++")
     parser.add_argument('--output_path', type=str, default="/cluster/51/koubaa/data/output/scannet++/")
-    parser.add_argument('--subscene', type=str, default="dslr", choices=['iphone', 'dslr'], help='which subscene to process')
+    parser.add_argument('--subscene', type=str, default="dslr", choices=['iphone', 'dslr','dtu'], help='which subscene to process')
     parser.add_argument('--port', type=int, default=6009, help='port for visualization')
     args = parser.parse_args()
     dataset_path = args.dataset_path
     subscene = args.subscene
-    modifications= {'iphone': ['exposure_optimization'], 'dslr': ['MCMC','depth Gaussian reinitialization','normal_depth_prior']}
+    modifications= {'iphone': ['exposure_optimization'], 'dslr': ['MCMC','depth Gaussian reinitialization','normal_depth_prior'], 'dtu': ['MCMC','depth Gaussian reinitialization','normal_depth_prior']}
     mod_list = modifications[subscene]
     all_combinations = []
     
@@ -29,17 +29,23 @@ if __name__ == "__main__":
 
     results_dict = {}
     for scene in os.listdir(os.path.join(args.output_path)):
-        if scene not in ['7b6477cb95', 'c50d2d1d42']:
-            continue
+        #if scene not in ['7b6477cb95', 'c50d2d1d42', '31a2c91c43']:
+        #    continue
         for comb in all_combinations:
-
-            model_path = os.path.join(args.output_path,scene, subscene, '-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else "base_model")
+            if subscene == 'dtu':
+                
+                model_path = os.path.join(args.output_path,scene, '-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else "base_model")
+            else:
+                model_path = os.path.join(args.output_path,scene, subscene, '-'.join([opt.replace(' ','_') for opt in comb]) if len(comb)>0 else "base_model")
             metrics_path = os.path.join(model_path, "point_cloud", 'iteration_30000', "metrics.json")
             if not os.path.exists(metrics_path):
+                print(f"Metrics file not found for model {model_path}, skipping...")
                 continue
             with open(metrics_path, 'r') as f:
                 results = json.load(f)
-                
+                if 'CD' not in results:
+                    print(f"CD metric not found in metrics file for model {model_path}, skipping...")
+                    continue
                 entry = '+'.join([opt.replace('_',' ') for opt in comb]) if len(comb)>0 else "base model"
                 if entry not in results_dict:
                     results_dict[entry] = [results]
@@ -50,7 +56,8 @@ if __name__ == "__main__":
     results = {}
     for key in results_dict.keys():
         results[key] = {}
-        for metric in results_dict[key][0].keys():
+        for metric in  ['PSNR', 'SSIM', 'L1', 'LPIPS', 'CD', 'DepthAbsRel','Points']:
+            #print(f"Processing metric {metric} for combination {key} with {len(results_dict[key])} entries")
             results[key][metric] = sum([result[metric] for result in results_dict[key]])/len(results_dict[key])
     
     combination_names = [ '+'.join([opt.replace('_',' ') for opt in comb]) if len(comb)>0 else "base model" for comb in all_combinations]
@@ -58,11 +65,11 @@ if __name__ == "__main__":
     results_final = {}  
     for key in results.keys():
         value= results[key]
-        key = key.replace('MCMC','1').replace('depth Gaussian reinitialization','2').replace('normal depth prior','3')
+        key = key.replace('MCMC','1').replace('depth Gaussian reinitialization','2').replace('normal depth prior','3').replace('exposure optimization','Exp. Opt.')
         results_final[key]= value
     
     df = pd.DataFrame.from_dict(results_final, orient='index')
-    to_min = ['L1', 'LPIPS', 'CD']
+    to_min = ['L1', 'LPIPS', 'CD', 'DepthAbsRel']
     to_max = ['PSNR', 'SSIM']
     def bold_best(col):
         if col.name in to_min:
@@ -74,7 +81,7 @@ if __name__ == "__main__":
         return ['\\textbf{' + f'{v:.3f}' + '}' if b else f'{v:.3f}' for v, b in zip(col, is_best)]
     
         # Reorder columns - specify your desired column order
-    desired_order = ['PSNR', 'SSIM', 'L1', 'LPIPS', 'CD','Points']  # Adjust as needed
+    desired_order = ['PSNR', 'SSIM', 'L1', 'LPIPS', 'CD', 'DepthAbsRel','Points']  # Adjust as needed
     df = df[desired_order].apply(bold_best)
     header_map = {
         'PSNR': 'PSNR $\\uparrow$',
@@ -82,7 +89,8 @@ if __name__ == "__main__":
         'L1': 'L1 $\\downarrow$',
         'LPIPS': 'LPIPS $\\downarrow$',
         'CD': 'CD $\\downarrow$',
-        'Points': 'Points $\\uparrow$'
+        'DepthAbsRel': 'AbsRel $\\downarrow$',
+        'Points': 'Points'
     }
     latex_table = df.rename(columns=header_map).to_latex(escape=False)
     document='''\\documentclass[varwidth]{standalone}
@@ -91,6 +99,7 @@ if __name__ == "__main__":
 \\usepackage{booktabs}
 \\begin{document}
 \\small
+\\setlength{\\tabcolsep}{4pt}
 ''' + latex_table + '''\\end{document}
 '''
     with open(os.path.join( f'{subscene}_results_table.tex'), 'w') as f:
