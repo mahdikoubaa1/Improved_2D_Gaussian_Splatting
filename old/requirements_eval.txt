@@ -1,2 +1,0 @@
-# Additional dependencies for evaluation
-lpips

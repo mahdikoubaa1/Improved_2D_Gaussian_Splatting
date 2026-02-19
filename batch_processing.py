@@ -46,11 +46,11 @@ if __name__ == "__main__":
     for r in range(len(mod_list) + 1):
         all_combinations.extend(combinations(mod_list, r))
     #all_combinations = all_combinations[-3:] # process combinations with more modifications first
-    lambda_dist = {'7b6477cb95': 10, 'c50d2d1d42': 10, 'cc5237fd77': 1, '0b031f3119': 100} if subscene == 'dslr' else {'7b6477cb95': 10, 'c50d2d1d42': 10, 'cc5237fd77': 1, '0b031f3119': 10}
+    lambda_dist = {'7b6477cb95': 10, 'c50d2d1d42': 10, 'cc5237fd77': 1, '0b031f3119': 1000} if subscene == 'dslr' else {'7b6477cb95': 10, 'c50d2d1d42': 10, 'cc5237fd77': 1, '0b031f3119': 10}
     subscene__options = {
-        'iphone':  {'train':'--depth_ratio 1 --geometric_test --images rgb  --test_images ../dslr/resized_undistorted_images --train_transforms_file nerfstudio/transforms.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval  ',
+        'iphone':  {'train':'--depth_ratio 1  --images rgb  --test_images ../dslr/resized_undistorted_images --train_transforms_file nerfstudio/transforms.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --resolution 2 ',
                     'render':'--depth_ratio 1 --images ../dslr/resized_undistorted_images --test_images ../dslr/resized_undistorted_images --train_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.1 --iteration 30000'},
-        'dslr': {'train':'--depth_ratio 1 --geometric_test --images resized_undistorted_images --test_images resized_undistorted_images --train_transforms_file nerfstudio/transforms_undistorted.json --test_transforms_file nerfstudio/transforms_undistorted.json --eval',
+        'dslr': {'train':'--depth_ratio 1  --images resized_undistorted_images --test_images resized_undistorted_images --train_transforms_file nerfstudio/transforms_undistorted.json --test_transforms_file nerfstudio/transforms_undistorted.json --eval --resolution 2',
                  'render':'--depth_ratio 1 --images ../dslr/resized_undistorted_images --test_images ../dslr/resized_undistorted_images --train_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --test_transforms_file ../dslr/nerfstudio/transforms_undistorted.json --eval --skip_train --skip_test --voxel_size 0.02 --depth_trunc 7 --sdf_trunc 0.1 --iteration 30000'},
         'dtu': {'train':'--use_colmap --resolution 2 --colmap_folder \'sparse/0\' --depth_ratio 1 --eval --geo_type pcd --geo_name pcd.ply',
                 'render':'--use_colmap --colmap_folder \'sparse/0\' --depth_ratio 1 --skip_train --skip_test --eval'}
@@ -107,8 +107,8 @@ if __name__ == "__main__":
             attempt = 0
 
             print("Executing rendering command: ", render_cmd)
-            while (attempt==0 or not os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply'))):
-                #os.system(render_cmd)
+            while (not os.path.exists(os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply'))):
+                os.system(render_cmd)
                 
                 if subscene == 'dtu':
                     ply_file = os.path.join(model_path, 'train','ours_30000', 'fuse_post.ply')
