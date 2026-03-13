@@ -48,13 +48,13 @@ To control which specific enhancements (MCMC, Priors, etc.) are active, you must
 
 ### **Execution Commands**
 
-**For DTU Scans:**
+**For DTU [^7] Scans:**
 
 ``` bash
 
 python batch_processing.py --dataset_path <DTU_DIR> --output_path <OUT_DIR> --scene <SCAN_NAME> --subscene dtu
 ```
-**For ScanNet++ iPhone Scenes:**
+**For ScanNet++ [^8] iPhone Scenes:**
 
 ``` bash
 
@@ -162,3 +162,5 @@ This project was completed as part of an In-Course Project at **TUM** (Dec 2025 
 [^4]: Yang et al., "Depth Anything V2: Monocular Depth Estimation with Adversarial Training," arXiv, 2024.
 [^5]: Bae et al., "Estimating Sharp and Accurate Surface Normal Maps from Monocular Images (DSINE)," CVPR, 2024.
 [^6]: Kerbl et al., "Hierarchical 3D Gaussian Splatting," SIGGRAPH, 2024.
+[^7]: Jensen et al., "Large Scale Multi-view Stereopsis Evaluation," CVPR, 2014.
+[^8]: Yeshwanth et al., "ScanNet++: A High-Fidelity Dataset of 3D Indoor Scenes," ICCV, 2023.
