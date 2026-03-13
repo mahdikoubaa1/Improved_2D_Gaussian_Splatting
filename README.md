@@ -1,4 +1,4 @@
-# **Improving 2DGS Using Previous 3DGS Findings**
+# **Improving 2DGS Using Technique from 3DGS Works**
 
 This repository contains the implementation for the In-Course Project at the **Technical University of Munich (TUM)**, supervised by the 3D AI Lab. The project focuses on enhancing 2D Gaussian Splatting (2DGS) by integrating advanced densification strategies, geometric priors, and exposure optimization techniques originally discovered in 3DGS research.
 
@@ -24,8 +24,9 @@ The project utilizes submodules for the core engine and dataset handling:
 
 ```bash
 
-git clone --recursive <repository-url>  
-cd <repository-name>
+git clone --recursive git@github.com:mahdikoubaa1/Improved_2D_Gaussian_Splatting.git
+cd Improved_2D_Gaussian_Splatting
+
 ```
 ### **2\. Environment Setup**
 
