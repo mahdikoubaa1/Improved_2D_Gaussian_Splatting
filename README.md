@@ -155,3 +155,5 @@ This project was completed as part of an In-Course Project at **TUM** (Dec 2025 
 
 * **Supervisor:** Prof. Dr. A. Dai  
 * **Advisors:** M.Sc. Y. Liu, M.Sc. D. Gao, M.Sc. M. Boudjoghra
+
+[^1]: Chen et al., "2D Gaussian Splatting for Geometrically Accurate Radiance Fields," SIGGRAPH 2024.
