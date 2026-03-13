@@ -107,7 +107,7 @@ MCMC sampling significantly boosts PSNR on the DTU objects, while geometric guid
 | **1+3 (MCMC \+ Priors)** | 29.492 | **0.922** | **0.137** | 0.587 | 0.012 |
 | **1+2+3 (All)** | **29.989** | 0.909 | 0.183 | 0.661 | 0.013 |
 
-### **Qualitative Results for NVS**
+### **Qualitative Results for NVS on Scannet++ Scenes (DSLR)**
 <table style="width:100%; border-collapse:collapse; border:none;">
   <tr>
     <td align="center" style="width:33%; border:none;">
@@ -125,7 +125,7 @@ MCMC sampling significantly boosts PSNR on the DTU objects, while geometric guid
   </tr>
 </table>
 
-### **Qualitative Results for Mesh Reconstruction**
+### **Qualitative Results for Mesh Reconstruction on Scannet++ Scenes (DSLR)**
 <table style="width:100%; border-collapse:collapse; border:none;">
   <tr>
     <td align="center" style="width:33%; border:none;">
