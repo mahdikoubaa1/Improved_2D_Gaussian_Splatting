@@ -13,7 +13,7 @@ This repository contains the implementation for the In-Course Project at the **T
 
 The project utilizes submodules for the core engine and dataset handling:
 
-* 2dGScode/: Core 2D Gaussian Splatting implementation (Submodule).  
+* 2DGScode/: Core 2D Gaussian Splatting implementation (Submodule).  
 * scannetpp/: Utilities for the ScanNet++ dataset (Submodule).  
 * scannetppdatacode/: Data downloading and preprocessing scripts.  
 * batch_processing.py: The primary entry point for running combined modifications experiments.
