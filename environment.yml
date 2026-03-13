@@ -24,8 +24,8 @@ dependencies:
     - trimesh
     - numpy
     - plyfile
-    - 2dGScode/submodules/diff-surfel-rasterization
-    - 2dGScode/submodules/simple-knn
+    - 2DGScode/submodules/diff-surfel-rasterization
+    - 2DGScode/submodules/simple-knn
     - opencv-python
     - munch
     - pyyaml
