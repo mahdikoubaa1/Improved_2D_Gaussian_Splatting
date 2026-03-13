@@ -16,7 +16,7 @@ The project utilizes submodules for the core engine and dataset handling:
 * 2dGScode/: Core 2D Gaussian Splatting implementation (Submodule).  
 * scannetpp/: Utilities for the ScanNet++ dataset (Submodule).  
 * scannetppdatacode/: Data downloading and preprocessing scripts.  
-* batch_processing.py: The primary entry point for running multi-scene experiments.
+* batch_processing.py: The primary entry point for running combined modifications experiments.
 
 ## **⚙️ Setup and Installation**
 
