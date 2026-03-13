@@ -4,10 +4,10 @@ This repository contains the implementation for the In-Course Project at the **T
 
 ## **🚀 Key Contributions**
 
-* **MCMC Sampling:** Markov-Chain Monte Carlo sampling with adapted densification for superior Gaussian positioning and reduced artifacts.  
-* **Depth Reinitialization:** Strategic re-initialization to mitigate overlapping Gaussians and under-reconstruction in sparse areas.  
-* **Geometric Guidance:** Integration of depth and normal priors sourced from **DepthAnythingV2** and **DSINE**.  
-* **Exposure Optimization:** A dedicated module for improving reconstruction performance on scenes with dynamic or inconsistent exposure (e.g., handheld iPhone captures).
+* **MCMC Sampling[^2]:** Markov-Chain Monte Carlo sampling with adapted densification for superior Gaussian positioning and reduced artifacts.  
+* **Depth Reinitialization[^3]:** Strategic re-initialization to mitigate overlapping Gaussians and under-reconstruction in sparse areas.  
+* **Geometric Guidance:** Integration of depth and normal priors sourced from **DepthAnythingV2[^4]** and **DSINE[^5]**.  
+* **Exposure Optimization[^6]:** A dedicated module for improving reconstruction performance on scenes with dynamic or inconsistent exposure (e.g., handheld iPhone captures).
 
 ## **📂 Repository Structure**
 
@@ -156,4 +156,9 @@ This project was completed as part of an In-Course Project at **TUM** (Dec 2025 
 * **Supervisor:** Prof. Dr. A. Dai  
 * **Advisors:** M.Sc. Y. Liu, M.Sc. D. Gao, M.Sc. M. Boudjoghra
 
-[^1]: Chen et al., "2D Gaussian Splatting for Geometrically Accurate Radiance Fields," SIGGRAPH 2024.
+[^1]: Chen et al., "2D Gaussian Splatting for Geometrically Accurate Radiance Fields," SIGGRAPH, 2024.
+[^2]: Shakir et al., "3D Gaussian Splatting as Markov Chain Monte Carlo," arXiv, 2024.
+[^3]: Fan et al., "Mini-Splatting: Sparse 3D Gaussian Splatting with Low-Resolution Depth Priors," arXiv, 2024.
+[^4]: Yang et al., "Depth Anything V2: Monocular Depth Estimation with Adversarial Training," arXiv, 2024.
+[^5]: Bae et al., "Estimating Sharp and Accurate Surface Normal Maps from Monocular Images (DSINE)," CVPR, 2024.
+[^6]: Kerbl et al., "Hierarchical 3D Gaussian Splatting," SIGGRAPH, 2024.
