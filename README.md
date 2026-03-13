@@ -107,6 +107,42 @@ MCMC sampling significantly boosts PSNR on the DTU objects, while geometric guid
 | **1+3 (MCMC \+ Priors)** | 29.492 | **0.922** | **0.137** | 0.587 | 0.012 |
 | **1+2+3 (All)** | **29.989** | 0.909 | 0.183 | 0.661 | 0.013 |
 
+### **Qualitative Results for NVS**
+<table style="width:100%; border-collapse:collapse; border:none;">
+  <tr>
+    <td align="center" style="width:33%; border:none;">
+      <img src="qualitative_results/ground_vis_new_zoom.png" style="width:100%"><br>
+      <b>Ground Truth</b>
+    </td>
+    <td align="center" style="width:33%; border:none;">
+      <img src="qualitative_results/base_vis_new_zoom.png" style="width:100%"><br>
+      <b>Base 2DGS</b>
+    </td>
+    <td align="center" style="width:33%; border:none;">
+      <img src="qualitative_results/ours_vis_new_zoom.png" style="width:100%"><br>
+      <b>Ours (MCMC + Priors)</b>
+    </td>
+  </tr>
+</table>
+
+### **Qualitative Results for Mesh Reconstruction**
+<table style="width:100%; border-collapse:collapse; border:none;">
+  <tr>
+    <td align="center" style="width:33%; border:none;">
+      <img src="qualitative_results/ground_new_zoom.png" style="width:100%"><br>
+      <b>Ground Truth</b>
+    </td>
+    <td align="center" style="width:33%; border:none;">
+      <img src="qualitative_results/base_new_zoom.png" style="width:100%"><br>
+      <b>Base 2DGS</b>
+    </td>
+    <td align="center" style="width:33%; border:none;">
+      <img src="qualitative_results/ours_new_zoom.png" style="width:100%"><br>
+      <b>Ours (MCMC + Priors)</b>
+    </td>
+  </tr>
+</table>
+
 ### **Key Takeaways**
 
 * **MCMC \+ Priors (1+3):** This configuration is the most robust, providing the highest visual fidelity (PSNR/SSIM) and the best depth accuracy (AbsRel).  
