@@ -1,6 +1,6 @@
 [submodule "scannetpp"]
 	path = scannetpp
 	url = https://github.com/scannetpp/scannetpp
-[submodule "scannetpp"]
+[submodule "2dGScode"]
         path = 2dGScode
         url = https://github.com/hbb1/2d-gaussian-splatting
